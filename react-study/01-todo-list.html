@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- 
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/styled-components@6.1.12/dist/styled-components.min.js"></script>
+     -->
+    <script src="./libs/react.development.js"></script>
+    <script src="./libs/react-dom.development.js"></script>
+    <script src="./libs/babel.min.js"></script>
+    <script src="./libs/styled-components.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+  <script type="text/babel">
+    const { useState, useReducer, useContext, createContext } = React;
+
+    // 创建一个任务组件
+    const TasksContext = createContext(null);
+    const TasksDispatchContext = createContext(null);
+
+    function Task({ task }) {
+      const [isEditing, setIsEditing] = useState(false);
+      // 获取任务列表的dispatch函数
+      const dispatch = useContext(TasksDispatchContext);
+      let taskContent;
+      if (isEditing) {
+        taskContent = (
+          <>
+            <input
+              value={task.text}
+              onChange={(e) => {
+                dispatch({
+                  type: 'changed',
+                  task: {
+                    ...task,
+                    text: e.target.value,
+                  },
+                });
+              }}
+            />
+            <button onClick={() => setIsEditing(false)}>保存</button>
+          </>
+        );
+      } else {
+        taskContent = (
+          <>
+            {task.text}
+            <button onClick={() => setIsEditing(true)}>编辑</button>
+          </>
+        );
+      }
+      return (
+        <label>
+          <input
+            type='checkbox'
+            checked={task.done}
+            onChange={(e) => {
+              dispatch({
+                type: 'changed',
+                task: {
+                  ...task,
+                  done: e.target.checked,
+                },
+              });
+            }}
+          />
+          {taskContent}
+          <button
+            onClick={() =>
+              dispatch({
+                type: 'deleted',
+                id: task.id,
+              })
+            }
+          >
+            删除
+          </button>
+        </label>
+      );
+    }
+
+    const Button = ({ children, onClick }) => {
+      // children是组件的子元素
+      // 在组件中，可以通过props.children获取子元素
+      return (
+        <button onClick={onClick}>
+          <span>⭐</span>
+          <span>{children}</span>
+        </button>
+      );
+    };
+
+    function AddTask() {
+      // 将useState返回的数组解构为两个变量
+      // 第一个变量是state，第二个变量是setState函数
+      // setState函数接受一个参数，这个参数是新的state
+      // setState函数会返回一个新的state，新的state会覆盖旧的state
+      // setState函数会触发组件的重新渲染
+      // 多次使用setState会合并多次调用
+      // 想要多次使用setState,可以使用函数式setState
+      // setState接受一个参数，这个参数可以是函数，也可以是对象
+      // 如果是函数，函数接受一个参数，这个参数是上一次的state
+      // 如果是对象，对象中必须包含一个key为type的属性，这个属性表示要执行的操作
+      // 例如：setState((prev) => prev + 1)；
+      const [text, setText] = useState('');
+      // 使用useContext获取对应Context中的参数
+      const tasks = useContext(TasksContext);
+      const dispatch = useContext(TasksDispatchContext);
+      return (
+        <>
+          <input
+            placeholder='添加任务'
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <Button
+            onClick={() => {
+              setText('');
+              dispatch({
+                type: 'added',
+                id: tasks.length,
+                text: text,
+              });
+            }}
+          >
+            添加
+          </Button>
+        </>
+      );
+    }
+
+    function TaskList() {
+      // useContext接受一个参数，这个参数是Context对象
+      // useContext返回Context中的参数
+      const tasks = useContext(TasksContext);
+      return (
+        <ul>
+          {tasks.map((task) => (
+            <li key={task.id}>
+              <Task task={task} />
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    function TaskApp() {
+      // 使用useReducer管理状态
+      // 使用useReducer同样也会重新渲染组件
+      // useReducer返回一个状态和一个dispatch函数
+      // dispatch函数用于分发action,action用于描述状态的变化
+      // useReducer接受两个参数,第一个参数是reducer函数,第二个参数是初始状态
+      // reducer函数接受两个参数,第一个参数是当前状态,第二个参数是action
+      // reducer函数返回新的状态
+      const [tasks, dispatch] = useReducer(tasksReducer, initialTasks);
+
+      return (
+        // 使用Context深层传递参数
+        <TasksContext.Provider value={tasks}>
+          <TasksDispatchContext.Provider value={dispatch}>
+            <h1>学习计划</h1>
+            <AddTask />
+            <TaskList />
+          </TasksDispatchContext.Provider>
+        </TasksContext.Provider>
+      );
+    }
+
+    const initialTasks = [
+      { id: 0, text: '学习React', done: true },
+      { id: 1, text: '完成一个组件', done: true },
+      { id: 2, text: '完成一个项目', done: false },
+    ];
+
+    // 使用Reducer管理状态
+    // Reducer是一个函数，接受两个参数，第一个参数是当前状态，第二个参数是action
+    function tasksReducer(tasks, action) {
+      switch (action.type) {
+        case 'added': {
+          return [
+            ...tasks,
+            {
+              id: action.id,
+              text: action.text,
+              done: false,
+            },
+          ];
+        }
+        case 'changed': {
+          return tasks.map((t) => {
+            if (t.id === action.task.id) {
+              return action.task;
+            } else {
+              return t;
+            }
+          });
+        }
+        case 'deleted': {
+          return tasks.filter((t) => t.id !== action.id);
+        }
+        default: {
+          throw Error('未知 action: ' + action.type);
+        }
+      }
+    }
+
+    const App = () => {
+      return <TaskApp />;
+    };
+
+    const root = ReactDOM.createRoot(document.querySelector('#root'));
+    root.render(<App />);
+  </script>
+</html>

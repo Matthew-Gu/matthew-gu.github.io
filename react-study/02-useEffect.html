@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./libs/react.development.js"></script>
+    <script src="./libs/react-dom.development.js"></script>
+    <script src="./libs/babel.min.js"></script>
+    <script src="./libs/styled-components.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function Playground() {
+      const [text, setText] = useState('aaa');
+
+      // useEffect接收两个参数，第一个参数是一个函数，第二个参数是一个数组，数组中的元素是依赖项，当依赖项变化时，会执行第一个参数的函数
+      // 当第二个参数是空数组时，useEffect只会在组件挂载时执行一次，当组件卸载时，会执行第一个参数的函数
+      // 当没有第二个参数或第二个参数为null时，useEffect会在每次组件更新时执行一次
+      // useEffect可以返回一个函数，当组件卸载时，会执行这个函数
+      useEffect(() => {
+        function onTimeout() {
+          console.log('⏰ ' + text);
+        }
+
+        console.log('🔵 安排 "' + text + '" 日志');
+        const timeoutId = setTimeout(onTimeout, 3000);
+
+        return () => {
+          console.log('🟡 取消 "' + text + '" 日志');
+          clearTimeout(timeoutId);
+        };
+      }, [text]);
+
+      return (
+        <>
+          <label>
+            日志内容：
+            <input value={text} onChange={(e) => setText(e.target.value)} />
+          </label>
+          <h1>{text}</h1>
+        </>
+      );
+    }
+
+    const App = () => {
+      const [show, setShow] = useState(false);
+      return (
+        <>
+          <button onClick={() => setShow(!show)}>
+            {show ? '卸载' : '挂载'}组件
+          </button>
+          {show && <hr />}
+          {show && <Playground />}
+        </>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.querySelector('#root'));
+    root.render(<App />);
+  </script>
+</html>

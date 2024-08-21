@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>swiper</title>
+    <script src="./libs/react.development.js"></script>
+    <script src="./libs/react-dom.development.js"></script>
+    <script src="./libs/babel.min.js"></script>
+    <script src="./libs/styled-components.min.js"></script>
+    <script src="./libs/swiper/swiper-bundle.min.js"></script>
+    <link href="./libs/swiper/swiper-bundle.min.css" rel="stylesheet" />
+  </head>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+    html,
+    body,
+    #root {
+      height: 100vh;
+      overflow: hidden;
+    }
+    .swiper {
+      height: 100%;
+    }
+
+    .swiper-slide {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 30px;
+      font-weight: 600;
+    }
+
+    .swiper-slide span {
+      opacity: 0;
+      transform: translateY(150%);
+    }
+
+    .swiper-slide.active span {
+      animation: fade-in 0.6s forwards ease-in-out;
+    }
+
+    .swiper-slide:nth-of-type(odd) {
+      background: pink;
+    }
+
+    @keyframes fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(150%);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  </style>
+  <body>
+    <div id="root"></div>
+  </body>
+  <script type="text/babel">
+    const { useState, useEffect, useContext, createContext } = React;
+
+    const App = () => {
+      useEffect(() => {
+        const swiper = new Swiper('.swiper', {
+          loop: false,
+          slidesPerView: 1,
+          direction: 'vertical',
+          mousewheel: true,
+          scrollbar: {
+            el: '.swiper-scrollbar',
+            hide: true,
+          },
+          slideClass: 'swiper-slide',
+          slideActiveClass: 'active',
+        });
+      }, []);
+      return (
+        <>
+          <div className='swiper'>
+            <div className='swiper-wrapper'>
+              <div className='swiper-slide'>
+                <span>Slide 1</span>
+              </div>
+              <div className='swiper-slide'>
+                <span>Slide 2</span>
+              </div>
+              <div className='swiper-slide'>
+                <span>Slide 3</span>
+              </div>
+            </div>
+            <div className='swiper-scrollbar'></div>
+          </div>
+        </>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.querySelector('#root'));
+    root.render(<App />);
+  </script>
+</html>

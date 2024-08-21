@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./libs/react.development.js"></script>
+    <script src="./libs/react-dom.development.js"></script>
+    <script src="./libs/babel.min.js"></script>
+    <script src="./libs/styled-components.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+      }
+
+      body {
+        display: grid;
+        place-items: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function createConnection(serverUrl, roomId) {
+      // 实际的实现将会连接到服务器
+      return {
+        connect() {
+          console.log(
+            '✅ 连接到 "' + roomId + '" 房间，位于' + serverUrl + '...'
+          );
+        },
+        disconnect() {
+          console.log('❌ 断开 "' + roomId + '" 房间，位于' + serverUrl);
+        },
+      };
+    }
+
+    const serverUrl = 'https://localhost:1234';
+
+    function ChatRoom({ roomId }) {
+      useEffect(() => {
+        const connection = createConnection(serverUrl, roomId);
+        connection.connect();
+        return () => connection.disconnect();
+      }, [roomId]);
+
+      // 为什么 serverUrl 不需要作为依赖项呢？
+      // 因为 serverUrl 是一个常量，不会改变，依赖项只有在随时间变化时才会起作用
+      // roomId 在重新渲染时可能会不同
+      // 在组件内部声明的 props、state 和其他值都是 响应式 的
+      // 因为它们是在渲染过程中计算的，并参与了 React 的数据流。
+
+      // 每当组件使用不同的 roomId 重新渲染后，Effect 将重新进行同步
+      // 例如，假设用户将 roomId 从 "travel" 更改为 "music"。
+      // React 将再次通过调用清理函数 停止同步 Effect（断开与 "travel" 聊天室的连接）。
+      // 然后，它将通过使用新的 roomId 属性再次运行 Effect 的主体部分 开始同步（连接到 "music" 聊天室）。
+
+      return <h1>欢迎来到 {roomId} 房间！</h1>;
+    }
+
+    function App() {
+      const [roomId, setRoomId] = useState('general');
+      const [show, setShow] = useState(false);
+      return (
+        <>
+          <label>
+            选择聊天室：{' '}
+            <select value={roomId} onChange={(e) => setRoomId(e.target.value)}>
+              <option value='general'>所有</option>
+              <option value='travel'>旅游</option>
+              <option value='music'>音乐</option>
+            </select>
+          </label>
+          <button onClick={() => setShow(!show)}>
+            {show ? '关闭聊天' : '打开聊天'}
+          </button>
+          {show && <hr />}
+          {show && <ChatRoom roomId={roomId} />}
+        </>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.querySelector('#root'));
+    root.render(<App />);
+  </script>
+</html>

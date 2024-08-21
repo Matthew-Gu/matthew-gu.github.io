@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="./libs/react.development.js"></script>
+    <script src="./libs/react-dom.development.js"></script>
+    <script src="./libs/babel.min.js"></script>
+    <script src="./libs/styled-components.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    const Toast = ({ message, duration = 3000, onClose }) => {
+      const ToastOverlay = styled.div`
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        z-index: 9999;
+      `;
+
+      const ToastContent = styled.div`
+        position: absolute;
+        left: 2em;
+        right: 2em;
+        width: fit-content;
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.6);
+        color: #fff;
+        border-radius: 10px;
+        margin: 0 auto;
+      `;
+
+      useEffect(() => {
+        const timer = setTimeout(onClose, duration);
+        return () => clearTimeout(timer);
+      }, [duration, onClose]);
+
+      return (
+        <ToastOverlay>
+          <ToastContent>{message}</ToastContent>
+        </ToastOverlay>
+      );
+    };
+
+    const useToast = () => {
+      const [toasts, setToasts] = useState([]);
+
+      const showToast = (message, duration = 3000) => {
+        const id = Date.now();
+        setToasts((prevToasts) => [...prevToasts, { id, message, duration }]);
+      };
+
+      const removeToast = (id) => {
+        setToasts((prevToasts) =>
+          prevToasts.filter((toast) => toast.id !== id)
+        );
+      };
+
+      const ToastContainer = () => {
+        return ReactDOM.createPortal(
+          <div className='toast-container'>
+            {toasts.map((toast) => (
+              <Toast
+                key={toast.id}
+                message={toast.message}
+                duration={toast.duration}
+                onClose={() => removeToast(toast.id)}
+              />
+            ))}
+          </div>,
+          document.body
+        );
+      };
+
+      return [ToastContainer, showToast];
+    };
+
+    const App = () => {
+      const [ToastContainer, showToast] = useToast();
+
+      return (
+        <>
+          <button onClick={() => showToast('这是一条 3s Toast 消息！', 3000)}>
+            显示 3 秒 Toast
+          </button>
+          <button onClick={() => showToast('这是一条 5s Toast 消息！', 5000)}>
+            显示 5 秒 Toast
+          </button>
+          <ToastContainer />
+        </>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.querySelector('#root'));
+    root.render(<App />);
+  </script>
+</html>
