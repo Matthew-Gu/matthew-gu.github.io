@@ -50,10 +50,10 @@ function handlePendingElements(time = 150) {
   }, time);
 }
 
-function loadJSONAxios(fileName) {
+function loadFileByAxios(fileName) {
   return new Promise((resolve, reject) => {
     axios
-      .get(`./assets/${fileName}.md`)
+      .get(`./assets/${fileName}`)
       .then((res) => {
         if (res.status < 400) {
           resolve(res.data);
@@ -65,7 +65,7 @@ function loadJSONAxios(fileName) {
   });
 }
 
-loadJSONAxios('RESUME').then((res) => {
+loadFileByAxios('RESUME.md').then((res) => {
   const doms = parseMarkdown(res);
   markdownBody.append(...doms.children);
   handlePendingElements(100);
