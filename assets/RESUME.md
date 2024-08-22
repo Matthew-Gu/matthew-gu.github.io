@@ -24,9 +24,9 @@
 >
 > **5.** 熟悉 Git 版本控制
 >
-> **6** 熟悉 typescript，webpack，vite 等工具的使用
+> **6.** 熟悉 typescript，webpack，vite 等工具的使用
 >
-> **7.** 了解 Node.js、Express、Koa、MySQL 等后端技术
+> **7.** 了解 Node.js、MySQL
 
 ## 工作经历
 
