@@ -27,6 +27,8 @@
 > **6.** 熟悉 typescript，webpack，vite 等工具的使用
 >
 > **7.** 了解 Node.js、MySQL
+> >
+> **8.** 英语6级
 
 ## 工作经历
 
