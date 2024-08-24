@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JS GAME</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        background: black;
+        overflow: hidden;
+      }
+
+      body {
+        position: relative;
+      }
+
+      #game-panel {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 1024px;
+        margin: 0 auto;
+      }
+
+      .overlappingDiv {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: black;
+        opacity: 0;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      #game {
+        display: block;
+      }
+
+      .options {
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        height: 25%;
+        background: #fff;
+        border-top: 4px solid black;
+        display: flex;
+        visibility: hidden;
+      }
+
+      .options .skills {
+        flex: 2;
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      .skills button {
+        width: 50%;
+        border: none;
+        cursor: pointer;
+        outline: 1px solid black;
+      }
+
+      .skills button:hover {
+        background: #ddd;
+      }
+
+      .options .attack {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-left: 4px solid black;
+      }
+    </style>
+  </head>
+  <body>
+    <main id="game-panel">
+      <div class="overlappingDiv"></div>
+      <canvas id="game"></canvas>
+      <div class="options">
+        <div class="skills">
+          <button class="escape">逃跑</button>
+        </div>
+        <div class="attack">
+          <h1>攻击方式</h1>
+        </div>
+      </div>
+    </main>
+  </body>
+  <script type="module" src="./data/map.js"></script>
+  <script type="module" src="./classes.js"></script>
+  <script type="module" src="./battleScene.js"></script>
+  <script type="module" src="./index.js"></script>
+</html>
