@@ -190,14 +190,14 @@ function movePlayer(direction) {
       Math.max(player.position.y, battleZone.position.y);
     // 玩家与战斗区域重叠面积
     const overlappingArea = overlappingWidth * overlappingHeight;
-    // 玩家与战斗区域重叠面积大于玩家面积的一半，则10%的概率发生战斗
+    // 玩家与战斗区域重叠面积大于玩家面积的一半，则1%的概率发生战斗
     if (
       collisionDetection({
         rectangle1: player,
         rectangle2: battleZone,
       }) &&
       overlappingArea > (player.width * player.height) / 2 &&
-      Math.random() < 0.1
+      Math.random() < 0.01
     ) {
       cancelAnimationFrame(animationId);
       battle.initiated = true;
@@ -247,7 +247,7 @@ function movePlayer(direction) {
   }
 
   if (moving) {
-    movables.forEach((movable) => {
+    movables.forEach(movable => {
       movable.position[direction.axis] += direction.delta;
     });
   }
@@ -256,11 +256,11 @@ function movePlayer(direction) {
 function animate() {
   animationId = requestAnimationFrame(animate);
   background.draw();
-  boundaries.forEach((boundary) => {
+  boundaries.forEach(boundary => {
     boundary.draw();
   });
 
-  battleZones.forEach((battleZone) => {
+  battleZones.forEach(battleZone => {
     battleZone.draw();
   });
 
@@ -303,7 +303,7 @@ function escape() {
 escapeBtn.onclick = escape;
 
 let lastKey = '';
-window.addEventListener('keydown', (event) => {
+window.addEventListener('keydown', event => {
   switch (event.key) {
     case 'w':
       keys.w.pressed = true;
@@ -324,7 +324,7 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-window.addEventListener('keyup', (e) => {
+window.addEventListener('keyup', e => {
   switch (e.key) {
     case 'w':
       keys.w.pressed = false;
@@ -361,7 +361,7 @@ const getScale = (w = 1024, h = 576) => {
 };
 
 // 缩放样式
-const setScaleStyle = (element) => {
+const setScaleStyle = element => {
   const scale = getScale(element.clientWidth, element.clientHeight);
   element.style.transform = `scale(${scale}) translate(-50%, -50%)`;
   element.style.transformOrigin = '0 0';
