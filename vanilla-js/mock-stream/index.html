@@ -27,7 +27,7 @@
         box-sizing: border-box;
       }
 
-      .message-wrapper {
+      #message-wrapper {
         flex: 1;
         overflow-y: auto;
         display: flex;
@@ -105,11 +105,16 @@
         background: #5c56e3;
         color: #ffffff;
       }
+
+      #send-btn:disabled {
+        background: #9b97e7;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
     <div class="chat-container">
-      <div class="message-wrapper">
+      <div id="message-wrapper">
         <div id="message-list"></div>
       </div>
       <div class="input-area">
@@ -242,12 +247,14 @@
     const textarea = $('#text-area');
     const sendBtn = $('#send-btn');
     const messageList = $('#message-list');
+    const messageWrapper = $('#message-wrapper');
     let isPending = false;
 
     const readStream = async () => {
       const text = textarea.value;
       if (isPending || text.trim() === '') return;
       isPending = true;
+      sendBtn.disabled = true;
 
       // 创建问题框
       const questionItem = document.createElement('div');
@@ -261,7 +268,9 @@
       textarea.value = '';
       textarea.blur();
 
-      await new Promise((resolve) => setTimeout(resolve, 200));
+      messageWrapper.scrollTo({
+        top: messageWrapper.scrollHeight,
+      });
 
       // 获取模拟流式数据
       const response = mockReadableStream(text);
@@ -283,6 +292,7 @@
         bubble2.innerText = answer;
       }
       isPending = false;
+      sendBtn.disabled = false;
     };
 
     sendBtn.onclick = readStream;
