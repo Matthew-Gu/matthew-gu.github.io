@@ -162,9 +162,7 @@ const readStream = async () => {
 
   messageWrapper.scrollTo({
     top: messageWrapper.scrollHeight,
-    behavior: 'smooth',
   });
-  await new Promise((resolve) => setTimeout(resolve, 500));
 
   // 获取模拟流式数据
   const response = mockReadableStream(mdi.render(text));
