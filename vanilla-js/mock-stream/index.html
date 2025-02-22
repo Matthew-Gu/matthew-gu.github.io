@@ -27,9 +27,15 @@
         box-sizing: border-box;
       }
 
-      #message-list {
+      .message-wrapper {
         flex: 1;
         overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse;
+      }
+
+      #message-list {
+        margin-bottom: auto;
       }
 
       .message-box {
@@ -103,7 +109,9 @@
   </head>
   <body>
     <div class="chat-container">
-      <div id="message-list"></div>
+      <div class="message-wrapper">
+        <div id="message-list"></div>
+      </div>
       <div class="input-area">
         <textarea id="text-area" placeholder="type here"></textarea>
         <button id="send-btn">send</button>
@@ -250,10 +258,6 @@
       questionItem.appendChild(bubble1);
       messageList.appendChild(questionItem);
 
-      messageList.scrollTo({
-        top: messageList.scrollHeight,
-      });
-
       textarea.value = '';
       textarea.blur();
 
@@ -277,10 +281,6 @@
         const chunkData = JSON.parse(chunk.data);
         answer += chunkData.content;
         bubble2.innerText = answer;
-
-        messageList.scrollTo({
-          top: messageList.scrollHeight,
-        });
       }
       isPending = false;
     };
