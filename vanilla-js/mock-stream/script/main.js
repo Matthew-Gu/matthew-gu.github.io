@@ -2,7 +2,9 @@ import MarkdownIt from 'https://esm.sh/markdown-it';
 import hljs from 'https://esm.sh/highlight.js';
 
 const mdi = new MarkdownIt({
+  html: true,
   linkify: true,
+  typographer: true,
   highlight(code, language) {
     const validLang = !!(language && hljs.getLanguage(language));
     if (validLang) {
