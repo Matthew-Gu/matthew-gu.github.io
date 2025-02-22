@@ -18,7 +18,7 @@ function highlightBlock(str, language = '') {
 
 const $ = document.querySelector.bind(document);
 
-function randomSplit(str, minLength = 2, maxLength = 7) {
+function randomSplit(str, minLength = 5, maxLength = 12) {
   // str = str.replace(/\n/g, " ");
   if (minLength < 1 || maxLength < minLength) {
     throw new Error('Invalid length range. Ensure minLength >= 1 and maxLength >= minLength.');
