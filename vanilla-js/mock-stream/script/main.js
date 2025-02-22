@@ -18,7 +18,7 @@ function highlightBlock(str, language = '') {
 
 const $ = document.querySelector.bind(document);
 
-function randomSplit(str, minLength = 5, maxLength = 12) {
+function randomSplit(str, minLength = 3, maxLength = 9) {
   // str = str.replace(/\n/g, " ");
   if (minLength < 1 || maxLength < minLength) {
     throw new Error('Invalid length range. Ensure minLength >= 1 and maxLength >= minLength.');
@@ -165,7 +165,7 @@ const readStream = async () => {
   });
 
   // 获取模拟流式数据
-  const response = mockReadableStream(mdi.render(text));
+  const response = mockReadableStream(text);
   // 处理流式数据
   const stream = handleStream(response);
 
@@ -181,7 +181,7 @@ const readStream = async () => {
   for await (const chunk of stream) {
     const chunkData = JSON.parse(chunk.data);
     answer += chunkData.content;
-    bubble2.innerHTML = answer;
+    bubble2.innerHTML = mdi.render(answer);
   }
   isPending = false;
   sendBtn.disabled = false;
