@@ -9,6 +9,10 @@
 7. [07-toast.html](https://matthew-gu.github.io/react-study/07-toast.html)
 8. [08-swiper.html](https://matthew-gu.github.io/react-study/08-swiper.html)
 
+# 简易视频播放器
+
+1. [simple-player](https://matthew-gu.github.io/simple-player/)
+
 # 原生 js
 
 1. [mock-stream](https://matthew-gu.github.io/vanilla-js/mock-stream)
