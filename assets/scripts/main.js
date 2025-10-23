@@ -1,72 +1,75 @@
+import handleStream from "./handleStream.js";
+import StreamingMarkdownRenderer from "./streamingMDRenderer.js";
+
 const markdownBody = document.querySelector('.markdown-body');
 
-function parseMarkdown(markdownText) {
-  // 将Markdown文本解析为HTML字符串
-  const htmlString = marked.parse(markdownText);
-  // 创建一个临时div元素来容纳解析后的HTML
-  const tempDiv = document.createElement('div');
-  tempDiv.innerHTML = htmlString;
+function randomSplit(str, minLength = 3, maxLength = 9) {
+	// str = str.replace(/\n/g, " ");
+	if (minLength < 1 || maxLength < minLength) {
+		throw new Error('Invalid length range. Ensure minLength >= 1 and maxLength >= minLength.');
+	}
 
-  // 遍历所有解析后的元素
-  Array.from(tempDiv.children).forEach((element) => {
-    const siblingElements = Array.from(element.children);
+	let result = [];
+	let startIndex = 0;
 
-    // 如果没有子元素或只有一个子元素，给父元素添加pending类名
-    if (siblingElements.length <= 1) {
-      element.classList.add('pending');
-    } else {
-      // 如果存在多个子元素，给它们添加pending类名
-      siblingElements.forEach((child) => child.classList.add('pending'));
-    }
-  });
+	while (startIndex < str.length) {
+		// 随机选择下一个分割点，确保每个部分长度在[minLength, maxLength]之间
+		let nextLength = Math.floor(Math.random() * (maxLength - minLength + 1)) + minLength;
+		let endIndex = Math.min(startIndex + nextLength, str.length);
 
-  return tempDiv;
+		// 分割字符串并添加到结果数组
+		result.push(str.substring(startIndex, endIndex));
+
+		// 更新起始索引
+		startIndex = endIndex;
+	}
+
+	return result;
 }
 
-function handlePendingElements(time = 150) {
-  const pendingElements = document.querySelectorAll('.pending');
-  let currentIndex = 0;
+function mockReadableStream(content) {
+	const sseChunks = [];
+	const contentChunks = randomSplit(content, 15, 25);
 
-  const interval = setInterval(() => {
-    if (currentIndex >= pendingElements.length) {
-      clearInterval(interval);
-      return;
-    }
+	for (let i = 0; i < contentChunks.length; i++) {
+		const jsonData = JSON.stringify({
+			id: i,
+			content: contentChunks[i]
+		});
+		const sseEventPart = `data: ${jsonData}\n\n`;
+		sseChunks.push(sseEventPart);
+	}
 
-    const element = pendingElements[currentIndex];
-    element.classList.remove('pending');
-    element.classList.add('animating');
-
-    // 只在需要的时候添加动画结束事件监听
-    element.addEventListener(
-      'animationend',
-      () => {
-        element.removeAttribute('class');
-      },
-      { once: true }
-    );
-
-    currentIndex++;
-  }, time);
+	return new ReadableStream({
+		async start(controller) {
+			for (const chunk of sseChunks) {
+				await new Promise((resolve) => setTimeout(resolve, 60));
+				controller.enqueue(new TextEncoder().encode(chunk));
+			}
+			controller.close();
+		}
+	});
 }
 
-function loadFileByAxios(fileName) {
-  return new Promise((resolve, reject) => {
-    axios
-      .get(`./assets/${fileName}`)
-      .then((res) => {
-        if (res.status < 400) {
-          resolve(res.data);
-        }
-      })
-      .catch((err) => {
-        reject(err);
-      });
-  });
+
+const renderer = new StreamingMarkdownRenderer(markdownBody);
+
+function loadFile(fileName) {
+	fetch(`./assets/${fileName}`)
+		.then((r) => r.text())
+		.then(async (res) => {
+			// 获取模拟流式数据
+			const response = mockReadableStream(res);
+			// 处理流式数据
+			const stream = handleStream(response);
+
+			for await (const chunk of stream) {
+				const { content: newChunk } = JSON.parse(chunk.data);
+				renderer.appendText(newChunk);
+			}
+
+			renderer.finish();
+		});
 }
 
-loadFileByAxios('RESUME.md').then((res) => {
-  const doms = parseMarkdown(res);
-  markdownBody.append(...doms.children);
-  handlePendingElements(100);
-});
+loadFile('RESUME.md');
