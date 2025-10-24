@@ -1,32 +1,30 @@
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
 }
 
 html,
 body {
-  min-height: 100%;
-  background: #0d1117;
+	min-height: 100%;
+	background: #0d1117;
 }
 
 body {
-  padding: 1.25rem;
+	padding: 1.25rem;
 }
 
-.pending {
-  display: none;
-}
-
-.animating {
-  animation: fade-in-text 600ms forwards linear 1;
+.markdown-body * {
+	animation: fade-in-text 400ms ease-in-out;
 }
 
 @keyframes fade-in-text {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+	from {
+		transform: translateY(0.4em);
+		opacity: 0;
+	}
+	to {
+		transform: translateY(0);
+		opacity: 1;
+	}
 }

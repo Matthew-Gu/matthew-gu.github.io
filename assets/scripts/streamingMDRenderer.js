@@ -3,9 +3,13 @@ export default class StreamingMarkdownRenderer {
 		this.container = container;
 		this.container.innerHTML = '';
 		this.buffer = '';
-		this._pendingBlock = null;
-		this._currentList = null;
-		this._codeBlock = null; // { pre, code, lang }
+		this.state = 'awaiting_block'; // 'awaiting_block' | 'in_paragraph' | 'in_code_block' | 'in_blockquote'
+		this.pendingParagraph = null;
+		this.currentList = null;
+		this.codeBlock = null;
+		this.blockquote = null;
+		this.codeBlockLang = '';
+		this.consecutiveNewlines = 0;
 	}
 
 	appendText(text) {
@@ -14,102 +18,102 @@ export default class StreamingMarkdownRenderer {
 	}
 
 	finish() {
-		// 处理剩余缓冲区行
-		if (this.buffer.trim()) {
-			this._processLine(this.buffer, true);
+		if (this.buffer) {
+			this._processChunk(this.buffer, true);
 			this.buffer = '';
 		}
-		// 收尾所有状态
-		this._finalizePendingBlock();
-		this._finalizeList();
-		this._finalizeCodeBlock();
+		this._finalizeAll();
 	}
 
 	_processBuffer() {
-		const lines = this.buffer.split('\n');
-		while (lines.length > 1) {
-			const line = lines.shift();
-			this._processLine(line, false);
+		if (this.state === 'in_code_block') {
+			this._processChunk(this.buffer, false);
+			this.buffer = '';
+		} else {
+			const lines = this.buffer.split('\n');
+			for (let i = 0; i < lines.length - 1; i++) {
+				this._processLine(lines[i], false);
+			}
+			this.buffer = lines[lines.length - 1] || '';
 		}
-		this.buffer = lines[0] || '';
 	}
 
-	_processLine(rawLine, isFinal = false) {
-		const line = rawLine;
+	_processChunk(chunk, isFinal) {
+		if (this.state === 'in_code_block') {
+			this._handleCodeBlockChunk(chunk, isFinal);
+		} else {
+			this._processLine(chunk, isFinal);
+		}
+	}
+
+	_processLine(line, isFinal) {
 		const trimmed = line.trim();
 
+		// --- Code fence ---
 		const codeFenceMatch = trimmed.match(/^```(?:\s*(\w+))?\s*$/);
 		if (codeFenceMatch) {
-			const lang = codeFenceMatch[1] || '';
-			if (this._codeBlock) {
+			if (this.state === 'in_code_block') {
 				this._finalizeCodeBlock();
 			} else {
-				this._finalizePendingBlock();
-				this._finalizeList();
-				this._startCodeBlock(lang);
+				this._finalizeAllBlocks();
+				this.codeBlockLang = codeFenceMatch[1] || '';
+				this._startCodeBlock();
 			}
 			return;
 		}
 
-		// 如果正在代码块中，则直接追加文本
-		if (this._codeBlock) {
+		if (this.state === 'in_code_block') {
 			this._appendCodeLine(line);
 			return;
 		}
 
-		// ---------- 水平线 ----------
+		// --- Horizontal rule ---
 		if (/^(?:-{3,}|_{3,}|\*{3,})$/.test(trimmed)) {
-			this._finalizePendingBlock();
-			this._finalizeList();
-			const hr = document.createElement('hr');
-			hr.className = isFinal ? 'animating' : 'pending';
+			this._finalizeAllBlocks();
+			const hr = this._createElement('hr');
 			this.container.appendChild(hr);
-			if (isFinal) this._createAnimating(hr);
 			return;
 		}
 
-		// ---------- 标题 ----------
+		// --- Heading ---
 		const headingMatch = line.match(/^(#{1,6})\s+(.*)/);
 		if (headingMatch) {
-			this._finalizePendingBlock();
-			this._finalizeList();
+			this._finalizeAllBlocks();
 			const level = Math.min(headingMatch[1].length, 6);
-			const h = document.createElement(`h${level}`);
+			const h = this._createElement(`h${level}`);
 			h.innerHTML = this._inlineMarkdown(headingMatch[2]);
 			this.container.appendChild(h);
-			this._createAnimating(h);
 			return;
 		}
 
-		// ---------- 引用块 ----------
+		// --- Blockquote ---
 		if (trimmed.startsWith('> ')) {
-			this._finalizePendingBlock();
+			this._finalizePendingParagraph();
 			this._finalizeList();
-			const quoteContent = trimmed.slice(2);
-			if (this._pendingBlock && this._pendingBlock.type === 'blockquote') {
-				this._pendingBlock.content += '\n' + quoteContent;
-				this._pendingBlock.element.innerHTML = this._inlineMarkdown(
-					this._pendingBlock.content.replace(/\n/g, '<br>')
-				);
-			} else {
-				const blockquote = document.createElement('blockquote');
-				blockquote.className = 'pending';
-				blockquote.innerHTML = this._inlineMarkdown(quoteContent);
-				this.container.appendChild(blockquote);
-				this._pendingBlock = { element: blockquote, type: 'blockquote', content: quoteContent };
+			const content = trimmed.slice(2);
+			if (!this.blockquote) {
+				this.blockquote = this._createElement('blockquote');
+				this.container.appendChild(this.blockquote);
+				this.state = 'in_blockquote';
 			}
+			const html = this.blockquote.innerHTML
+				? this.blockquote.innerHTML + '<br>' + this._inlineMarkdown(content)
+				: this._inlineMarkdown(content);
+			this.blockquote.innerHTML = html;
 			return;
+		} else if (this.blockquote) {
+			this._finalizeBlockquote();
 		}
 
-		// ---------- 列表 ----------
+		// --- List item ---
 		const listMatch = line.match(/^(\s*)([-*+]|[0-9]+\.)\s+(.*)/);
 		if (listMatch) {
-			this._finalizePendingBlock();
-			const indent = listMatch[1];
+			this._finalizePendingParagraph();
+			this._finalizeBlockquote();
+			const indentSpaces = listMatch[1].length;
 			const marker = listMatch[2];
 			const rawContent = listMatch[3];
 			const isOrdered = /^\d+\.$/.test(marker);
-			const listType = isOrdered ? 'ol' : 'ul';
 
 			let content = rawContent;
 			let isTask = false;
@@ -121,105 +125,192 @@ export default class StreamingMarkdownRenderer {
 				content = taskMatch[2];
 			}
 
-			let listNode;
-			if (this._currentList && this._currentList.type === listType && this._currentList.indent === indent) {
-				listNode = this._currentList.node;
+			const listType = isOrdered ? 'ol' : 'ul';
+
+			if (this.currentList && this.currentList.type === listType && this.currentList.indent === indentSpaces) {
+				// continue current list
 			} else {
 				this._finalizeList();
-				listNode = document.createElement(listType);
-				this.container.appendChild(listNode);
-				this._currentList = { type: listType, node: listNode, indent };
+				const listEl = this._createElement(listType);
+				this.container.appendChild(listEl);
+				this.currentList = {
+					type: listType,
+					node: listEl,
+					indent: indentSpaces
+				};
 			}
 
-			const li = document.createElement('li');
+			const li = this._createElement('li');
 			if (isTask) {
-				const checkbox = document.createElement('input');
-				checkbox.type = 'checkbox';
-				checkbox.disabled = true;
-				checkbox.checked = taskChecked;
+				const checkbox = this._createElement('input', {
+					type: 'checkbox',
+					disabled: true,
+					checked: taskChecked
+				});
 				li.appendChild(checkbox);
 				li.insertAdjacentHTML('beforeend', this._inlineMarkdown(content));
 			} else {
 				li.innerHTML = this._inlineMarkdown(content);
 			}
-			listNode.appendChild(li);
-			this._createAnimating(li);
+			this.currentList.node.appendChild(li);
 			return;
-		}
-
-		// ---------- 空行 ----------
-		if (trimmed === '') {
-			this._finalizePendingBlock();
+		} else if (this.currentList) {
 			this._finalizeList();
+		}
+
+		// --- Empty line ---
+		if (trimmed === '') {
+			this.consecutiveNewlines++;
+			if (this.consecutiveNewlines >= 2) {
+				this._finalizePendingParagraph();
+			}
+			this._finalizeBlockquote();
 			return;
 		}
 
-		// ---------- 普通段落 ----------
-		if (this._pendingBlock && this._pendingBlock.type === 'paragraph') {
-			this._pendingBlock.content += line + ' ';
-			this._pendingBlock.element.innerHTML = this._inlineMarkdown(this._pendingBlock.content.trim());
-		} else {
-			this._finalizePendingBlock();
-			const p = document.createElement('p');
-			p.className = 'pending';
-			const content = line + ' ';
-			p.innerHTML = this._inlineMarkdown(content.trim());
-			this.container.appendChild(p);
-			this._pendingBlock = { element: p, type: 'paragraph', content };
+		// --- Regular paragraph ---
+		this.consecutiveNewlines = 0;
+		if (!this.pendingParagraph) {
+			this.pendingParagraph = this._createElement('p');
+			this.container.appendChild(this.pendingParagraph);
+			this.state = 'in_paragraph';
+		}
+		const currentText = this.pendingParagraph.textContent || '';
+		this.pendingParagraph.innerHTML = this._inlineMarkdown((currentText ? currentText + ' ' : '') + line);
+	}
+
+	// --- Code Block (char-by-char) ---
+	_handleCodeBlockChunk(chunk, isFinal) {
+		let i = 0;
+		while (i < chunk.length) {
+			const ch = chunk[i];
+			if (ch === '\r') {
+				i++;
+				continue;
+			}
+
+			if (ch === '`') {
+				let j = i;
+				let backtickCount = 0;
+				while (j < chunk.length && chunk[j] === '`') {
+					backtickCount++;
+					j++;
+				}
+				if (backtickCount >= 3) {
+					this._finalizeCodeBlock();
+					i = j;
+					continue;
+				}
+			}
+
+			this._appendCodeChar(ch);
+			i++;
 		}
 	}
 
-	_finalizePendingBlock() {
-		if (this._pendingBlock) {
-			this._createAnimating(this._pendingBlock.element);
-			this._pendingBlock = null;
+	_startCodeBlock() {
+		const code = this._createElement('code', {
+			className: this.codeBlockLang ? `language-${this.codeBlockLang}` : ''
+		});
+		const pre = this._createElement('pre');
+		pre.appendChild(code);
+		this.container.appendChild(pre);
+		this.codeBlock = code;
+		this.state = 'in_code_block';
+	}
+
+	_appendCodeChar(ch) {
+		if (this.codeBlock) {
+			this.codeBlock.textContent += ch;
+		}
+	}
+
+	_appendCodeLine(line) {
+		if (this.codeBlock) {
+			this.codeBlock.textContent += line + '\n';
+		}
+	}
+
+	// --- Finalization ---
+	_finalizePendingParagraph() {
+		if (this.pendingParagraph) {
+			this.pendingParagraph = null;
+		}
+	}
+
+	_finalizeBlockquote() {
+		if (this.blockquote) {
+			this.blockquote = null;
 		}
 	}
 
 	_finalizeList() {
-		this._currentList = null;
-	}
-
-	// ---------- ✅ 代码块逻辑 ----------
-	_startCodeBlock(lang = '') {
-		const pre = document.createElement('pre');
-		const code = document.createElement('code');
-		if (lang) code.className = `language-${lang}`;
-		pre.appendChild(code);
-		this.container.appendChild(pre);
-		this._codeBlock = { pre, code, lang, content: '' };
-	}
-
-	_appendCodeLine(line) {
-		if (!this._codeBlock) return;
-		this._codeBlock.content += line + '\n';
-		this._codeBlock.code.textContent = this._codeBlock.content;
+		this.currentList = null;
 	}
 
 	_finalizeCodeBlock() {
-		if (!this._codeBlock) return;
-		// 如果引入 highlight.js，可加自动高亮：
-		// if (window.hljs) window.hljs.highlightElement(this._codeBlock.code);
+		if (this.codeBlock) {
+			// if (typeof hljs !== 'undefined') hljs.highlightElement(this.codeBlock);
+			this.codeBlock = null;
+			this.codeBlockLang = '';
+		}
+		this.state = 'awaiting_block';
+	}
 
-		this._codeBlock = null;
+	_finalizeAllBlocks() {
+		this._finalizePendingParagraph();
+		this._finalizeBlockquote();
+		this._finalizeList();
+	}
+
+	_finalizeAll() {
+		this._finalizeAllBlocks();
+		this._finalizeCodeBlock();
+	}
+
+	_createElement(tagName, attributes = {}, children) {
+		const el = document.createElement(tagName);
+
+		for (const [key, value] of Object.entries(attributes)) {
+			if (key === 'className') {
+				el.className = value;
+			} else if (key in el) {
+				el[key] = value;
+			} else {
+				el.setAttribute(key, value);
+			}
+		}
+
+		if (children !== undefined && children !== null) {
+			if (typeof children === 'string') {
+				el.textContent = children;
+			} else if (children instanceof Node) {
+				el.appendChild(children);
+			} else if (Array.isArray(children)) {
+				children.forEach((child) => {
+					if (child instanceof Node) {
+						el.appendChild(child);
+					} else if (typeof child === 'string') {
+						el.appendChild(document.createTextNode(child));
+					}
+				});
+			}
+		}
+
+		return el;
 	}
 
 	_inlineMarkdown(text) {
 		if (!text) return '';
 		return text
 			.replace(/&(?!amp;|lt;|gt;|quot;|#\d+;)/g, '&amp;')
-			.replace(/</g, '&lt;')
-			.replace(/>/g, '&gt;')
+			.replace(/</g, '<')
+			.replace(/>/g, '>')
 			.replace(/``(.+?)``/g, '<code>$1</code>')
 			.replace(/`([^`]+?)`/g, '<code>$1</code>')
 			.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 			.replace(/__(.+?)__/g, '<strong>$1</strong>')
-			.replace(/\*(.+?)\*/g, '<em>$1</em>')
-			.replace(/_(.+?)_/g, '<em>$1</em>');
-	}
-
-	_createAnimating(el) {
-		el.className = 'animating';
-		el.addEventListener('animationend', () => el.removeAttribute('class'), { once: true });
+			.replace(/\*(?!\*)(.+?)(?!\*)\*/g, '<em>$1</em>')
+			.replace(/_(?!_)(.+?)(?!_)_/g, '<em>$1</em>');
 	}
 }
