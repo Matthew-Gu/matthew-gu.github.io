@@ -1,5 +1,5 @@
 import handleStream from "./handleStream.js";
-import StreamingMarkdownRenderer from "./streamingMDRenderer.js";
+import { StreamingMarkdownRenderer } from './renderer/streaming-renderer.js';
 
 const markdownBody = document.querySelector('.markdown-body');
 
@@ -29,7 +29,7 @@ function randomSplit(str, minLength = 3, maxLength = 9) {
 
 function mockReadableStream(content) {
 	const sseChunks = [];
-	const contentChunks = randomSplit(content, 15, 25);
+	const contentChunks = randomSplit(content,15, 25);
 
 	for (let i = 0; i < contentChunks.length; i++) {
 		const jsonData = JSON.stringify({
@@ -43,7 +43,7 @@ function mockReadableStream(content) {
 	return new ReadableStream({
 		async start(controller) {
 			for (const chunk of sseChunks) {
-				await new Promise((resolve) => setTimeout(resolve, 60));
+				await new Promise((resolve) => setTimeout(resolve, 30));
 				controller.enqueue(new TextEncoder().encode(chunk));
 			}
 			controller.close();
@@ -68,7 +68,7 @@ function loadFile(fileName) {
 				renderer.appendText(newChunk);
 			}
 
-			renderer.finish();
+			await renderer.finish();
 		});
 }
 
