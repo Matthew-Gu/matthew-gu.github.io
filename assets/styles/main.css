@@ -28,3 +28,9 @@ body {
 .stream-preview {
   animation: fade-in-text 300ms ease-in-out both;
 }
+
+@media (min-width: 376px) {
+  body .markdown-body {
+    font-size: 12px !important;
+  }
+}
