@@ -175,29 +175,20 @@ export class MarkdownStreamSegmenter {
 
 			// list
 			if (this._isListItem(text)) {
-				/*
-				 * 列表项独立提交：
-				 *
-				 * - 已完成一行的 li 可以立即显示；
-				 * - 后续缩进行视为当前 li 的续行，一起提交；
-				 * - 下一条 li 不会被吞进当前提交范围。
-				 *
-				 * 这样连续列表不必等到整个列表结束后才出现在页面上。
-				 */
 				let j = i + 1;
 
 				while (j < lines.length) {
 					const current = lines[j].text;
 
-					if (this._isListItem(current)) {
-						break;
-					}
-
-					if (current.trim() === '' || /^[ \t]+\S/.test(current)) {
+					if (current.trim() === '' || this._isListItem(current) || /^[ \t]+\S/.test(current)) {
 						j++;
 						continue;
 					}
 
+					break;
+				}
+
+				if (j >= lines.length) {
 					break;
 				}
 

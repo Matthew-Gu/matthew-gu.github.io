@@ -14,17 +14,17 @@ body {
 	padding: 1.25rem;
 }
 
-.markdown-body * {
-	animation: fade-in-text 400ms ease-in-out;
+@keyframes fade-in-text {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 1em, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
 }
 
-@keyframes fade-in-text {
-	from {
-		transform: translateY(0.4em);
-		opacity: 0;
-	}
-	to {
-		transform: translateY(0);
-		opacity: 1;
-	}
+.stream-preview {
+  animation: fade-in-text 300ms ease-in-out both;
 }
