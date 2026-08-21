@@ -29,7 +29,7 @@ function randomSplit(str, minLength = 3, maxLength = 9) {
 
 function mockReadableStream(content) {
 	const sseChunks = [];
-	const contentChunks = randomSplit(content, 10, 20);
+	const contentChunks = randomSplit(content, 12, 18);
 
 	for (let i = 0; i < contentChunks.length; i++) {
 		const jsonData = JSON.stringify({
@@ -43,7 +43,7 @@ function mockReadableStream(content) {
 	return new ReadableStream({
 		async start(controller) {
 			for (const chunk of sseChunks) {
-				await new Promise((resolve) => setTimeout(resolve, 60));
+				await new Promise((resolve) => setTimeout(resolve, 30));
 				controller.enqueue(new TextEncoder().encode(chunk));
 			}
 			controller.close();

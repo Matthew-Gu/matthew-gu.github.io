@@ -25,20 +25,39 @@ body {
 	}
 }
 
-@keyframes fade-in-text {
+.stream-preview:not(ul):not(ol) {
+	animation: stream-block-enter 200ms ease-out both;
+}
+
+@keyframes stream-block-enter {
 	from {
 		opacity: 0;
-		transform: translate3d(0, 1em, 0);
+		transform: translateY(0.5em);
 	}
+
 	to {
 		opacity: 1;
-		transform: translate3d(0, 0, 0);
+		transform: translateY(0);
 	}
 }
 
-.stream-preview,
-.stream-enter {
-	animation: fade-in-text 300ms ease-in-out both;
+/*
+ * 每个新列表项自己的动画。
+ */
+.stream-list-item-enter {
+	animation: stream-list-item-enter 220ms ease-out both;
+}
+
+@keyframes stream-list-item-enter {
+	from {
+		opacity: 0;
+		transform: translateY(0.5em);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .chat-container {

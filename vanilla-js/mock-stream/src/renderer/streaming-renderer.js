@@ -43,6 +43,7 @@ export class StreamingMarkdownRenderer {
 		this.rafId = 0;
 		this.finished = false;
 		this.canceled = false;
+		this.pendingCarriageReturn = false;
 
 		this.container.replaceChildren();
 
@@ -60,7 +61,11 @@ export class StreamingMarkdownRenderer {
 			return;
 		}
 
-		const chunk = String(text).replace(/\r\n?/g, '\n');
+		const chunk = this._normalizeChunk(text);
+
+		if (!chunk) {
+			return;
+		}
 
 		this.fullSource += chunk;
 
@@ -85,6 +90,32 @@ export class StreamingMarkdownRenderer {
 		this._scheduleActiveRender();
 	}
 
+	_normalizeChunk(text) {
+		let source = String(text);
+
+		if (this.pendingCarriageReturn) {
+			source = `\r${source}`;
+			this.pendingCarriageReturn = false;
+		}
+
+		if (source.endsWith('\r')) {
+			this.pendingCarriageReturn = true;
+			source = source.slice(0, -1);
+		}
+
+		return source.replace(/\r\n?/g, '\n');
+	}
+
+	_flushPendingCarriageReturn() {
+		if (!this.pendingCarriageReturn) {
+			return '';
+		}
+
+		this.pendingCarriageReturn = false;
+
+		return '\n';
+	}
+
 	/*
 	 * 如果以后想统一成 view.append(chunk)，也可直接使用。
 	 */
@@ -95,6 +126,13 @@ export class StreamingMarkdownRenderer {
 	async finish() {
 		if (this.finished) {
 			return;
+		}
+
+		const tail = this._flushPendingCarriageReturn();
+
+		if (tail) {
+			this.fullSource += tail;
+			this.segmenter.append(tail);
 		}
 
 		this.finished = true;
@@ -241,4 +279,3 @@ export class StreamingMarkdownRenderer {
 		}
 	}
 }
-
