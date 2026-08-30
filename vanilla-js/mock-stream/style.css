@@ -17,22 +17,14 @@ body {
   overflow: hidden;
 }
 
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
 .stream-preview:not(ul):not(ol) {
-  animation: stream-block-enter 200ms ease-out both;
+  animation: stream-block-enter 180ms ease-out both;
 }
 
 @keyframes stream-block-enter {
   from {
     opacity: 0;
-    transform: translateY(0.5em);
+    transform: translateY(0.3em);
   }
   to {
     opacity: 1;
@@ -43,17 +35,90 @@ body {
  * 每个新列表项自己的动画。
  */
 .stream-list-item-enter {
-  animation: stream-list-item-enter 220ms ease-out both;
+  animation: stream-list-item-enter 180ms ease-out both;
 }
 
 @keyframes stream-list-item-enter {
   from {
     opacity: 0;
-    transform: translateY(0.5em);
+    transform: translateY(0.3em);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+.markdown-body pre {
+  position: relative;
+}
+
+.code-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #57606a;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.markdown-body pre:hover .code-copy-button,
+.markdown-body pre:focus-within .code-copy-button,
+.code-copy-button:focus-visible {
+  opacity: 1;
+}
+
+.code-copy-button:hover {
+  border-color: #d0d7de;
+  background: #ffffff;
+  color: #24292f;
+}
+
+.code-copy-button:focus-visible {
+  outline: 2px solid #5c56e3;
+  outline-offset: 2px;
+}
+
+.code-copy-button[data-copy-state=success] {
+  color: #1a7f37;
+}
+
+.code-copy-button[data-copy-state=error] {
+  color: #d92d20;
+}
+
+.code-copy-button[data-copy-state=success],
+.code-copy-button[data-copy-state=error] {
+  width: auto;
+  gap: 6px;
+  padding: 0 8px;
+}
+
+.code-copy-label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.code-copy-button svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+}
+
+@media (hover: none) {
+  .code-copy-button {
+    opacity: 1;
   }
 }
 .chat-container {
@@ -110,7 +175,6 @@ body {
   line-height: 1.44;
   word-wrap: break-word;
   box-sizing: border-box;
-  animation: fadeIn 0.3s ease;
 }
 .chat-container #message-list .message-box + .message-box {
   margin-top: 10px;
@@ -132,7 +196,10 @@ body {
 .input-area #text-area {
   flex: 1;
   min-width: 0;
-  resize: vertical;
+  min-height: 44px;
+  max-height: 180px;
+  resize: none;
+  overflow-y: hidden;
   border: none;
   outline: none;
 }

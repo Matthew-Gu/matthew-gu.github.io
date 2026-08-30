@@ -472,13 +472,39 @@ export class KaTeXMathProcessor {
  * highlight.js Processor
  * ======================================================= */
 
+const COPY_ICON = `
+<svg aria-hidden="true" focusable="false" fill="currentColor" height="16" viewBox="0 0 16 16" version="1.1" width="16">
+    <path
+        d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z">
+    </path>
+    <path
+        d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5c0-.138-.112-.25-.25-.25Z">
+    </path>
+</svg>`;
+
 export class HighlightJsProcessor {
+	constructor() {
+		this.copyResetTimers = new WeakMap();
+	}
+
 	apply(root) {
-		if (!root || typeof window.hljs?.highlightElement !== 'function') {
+		if (!root || typeof root.querySelectorAll !== 'function') {
 			return;
 		}
 
 		root.querySelectorAll('pre code').forEach((code) => {
+			const pre = code.parentElement;
+
+			if (!pre || pre.tagName !== 'PRE') {
+				return;
+			}
+
+			this._ensureCopyButton(pre, code);
+
+			if (typeof window.hljs?.highlightElement !== 'function') {
+				return;
+			}
+
 			/*
 			 * Marked 会生成：
 			 *
@@ -510,6 +536,83 @@ export class HighlightJsProcessor {
 
 			window.hljs.highlightElement(code);
 		});
+	}
+
+	_ensureCopyButton(pre, code) {
+		if (pre.querySelector('[data-copy-code-button]')) {
+			return;
+		}
+
+		const button = document.createElement('button');
+
+		button.type = 'button';
+		button.className = 'code-copy-button';
+		button.dataset.copyCodeButton = 'true';
+		this._setCopyState(button);
+		button.addEventListener('click', () => this._copyCode(button, code));
+
+		pre.appendChild(button);
+	}
+
+	async _copyCode(button, code) {
+		const previousTimer = this.copyResetTimers.get(button);
+
+		if (previousTimer !== undefined) {
+			window.clearTimeout(previousTimer);
+			this.copyResetTimers.delete(button);
+		}
+
+		try {
+			if (typeof navigator === 'undefined' || typeof navigator.clipboard?.writeText !== 'function') {
+				throw new Error('Clipboard API 不可用');
+			}
+
+			await navigator.clipboard.writeText(code.textContent ?? '');
+
+			this._setCopyState(button, 'success');
+		} catch (error) {
+			this._setCopyState(button, 'error');
+			console.warn('[HighlightJsProcessor] 代码复制失败。', error);
+		} finally {
+			const timer = window.setTimeout(() => {
+				if (!button.isConnected) {
+					this.copyResetTimers.delete(button);
+
+					return;
+				}
+
+				this._setCopyState(button);
+				this.copyResetTimers.delete(button);
+			}, 1500);
+
+			this.copyResetTimers.set(button, timer);
+		}
+	}
+
+	_setCopyState(button, state = '') {
+		const labels = {
+			success: '已复制',
+			error: '复制失败'
+		};
+		const label = labels[state] ?? '';
+
+		if (state) {
+			button.dataset.copyState = state;
+		} else {
+			delete button.dataset.copyState;
+		}
+
+		button.setAttribute('aria-label', label || '复制代码');
+		button.title = label || '复制代码';
+		button.innerHTML = COPY_ICON;
+
+		if (label) {
+			const labelElement = document.createElement('span');
+
+			labelElement.className = 'code-copy-label';
+			labelElement.textContent = label;
+			button.appendChild(labelElement);
+		}
 	}
 }
 

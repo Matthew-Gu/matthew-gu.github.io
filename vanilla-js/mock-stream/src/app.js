@@ -13,6 +13,22 @@ const mountStreamDemo = () => {
 
 	const messageWrapper = $('#message-wrapper');
 
+	const MIN_TEXTAREA_HEIGHT = 44;
+
+	const MAX_TEXTAREA_HEIGHT = 180;
+
+	const resizeTextarea = () => {
+		textarea.style.height = 'auto';
+
+		const contentHeight = textarea.scrollHeight;
+		const nextHeight = Math.min(Math.max(contentHeight, MIN_TEXTAREA_HEIGHT), MAX_TEXTAREA_HEIGHT);
+
+		textarea.style.height = `${nextHeight}px`;
+		textarea.style.overflowY = contentHeight > MAX_TEXTAREA_HEIGHT ? 'auto' : 'hidden';
+	};
+
+	resizeTextarea();
+
 	const updateMessageScrollbarWidth = () => {
 		const scrollbarWidth = Math.max(0, messageWrapper.offsetWidth - messageWrapper.clientWidth);
 
@@ -130,6 +146,7 @@ const mountStreamDemo = () => {
 		messageList.appendChild(questionItem);
 
 		textarea.value = '';
+		resizeTextarea();
 		textarea.blur();
 
 		scrollToLatest({ force: true });
@@ -221,6 +238,8 @@ const mountStreamDemo = () => {
 			readStream();
 		}
 	});
+
+	textarea.addEventListener('input', resizeTextarea);
 };
 
 mountStreamDemo();
